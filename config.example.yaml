@@ -1,0 +1,214 @@
+# ============================================================
+# convention-extractor 설정 파일 (v1.4)
+# ============================================================
+#
+# 사용법:
+#   이 파일을 config.yaml로 복사하여 환경에 맞게 수정하세요.
+#     cp config.example.yaml config.yaml
+#     nano -i config.yaml
+#
+# 설정 우선순위: CLI 옵션 > 환경변수 > config.yaml > 기본값
+#
+# 모든 항목에 기본값이 있으므로, config.yaml이 없어도 동작합니다.
+# 필요한 항목만 지정하면 나머지는 기본값 적용.
+#
+
+# ============================================================
+# LLM API 설정
+# ============================================================
+
+# api_base: LLM API 엔드포인트 URL
+#   - OpenAI 호환 API 형식 (/v1/chat/completions)
+#   - 환경변수: CONVENTION_API_BASE
+#   - CLI: --api-base
+#   - 기본값: http://localhost:11434/v1 (로컬 Ollama)
+#
+# 환경별 예시:
+#   로컬 Ollama:            http://localhost:11434/v1
+#   회사 LLM 프록시:        http://your-llm-host.example.com:4000/v1
+#   OpenAI:                 https://api.openai.com/v1
+#   Azure OpenAI:           https://{리소스}.openai.azure.com/v1
+#   vLLM / TGI:             http://gpu-server:8000/v1
+# — 옵션 1: your-reasoning-model (범용, 분석 품질 최고, thinking 모델) —
+#   ⚠️ thinking 모델은 자동으로 max_tokens=16384, timeout=600 적용됨
+api_base: http://your-llm-host.example.com:4000/v1
+api_key: sk-your-api-key-here
+model: your-reasoning-model
+
+# — 옵션 2: your-coding-model-fast (코딩 특화, 빠름) —
+# api_base: http://your-llm-host.example.com:4000/v1
+# api_key: sk-your-api-key-here
+# model: your-coding-model-fast
+
+# — 옵션 3: your-coding-model (코딩 특화, 경량) —
+# api_base: http://your-llm-host.example.com:4000/v1
+# api_key: sk-your-api-key-here
+# model: your-coding-model
+
+# ============================================================
+# 분석 설정
+# ============================================================
+
+# max_files: LLM 분석할 최대 소스 파일 수
+#   - CLI: --max-files, -n
+#   - 기본값: 1000
+#   - 컨벤션 추출(LLM)에만 영향. 컴플라이언스 체크는 전체 파일 대상
+#   - 파일이 많으면 언어별 균등 샘플링 적용됨
+max_files: 1000
+
+# batch_size: LLM 한번 호출에 포함할 파일 수 (컨벤션 추출용)
+#   - 기본값: 5
+#   - 컨텍스트가 큰 모델(128K+): 8~10도 가능
+#   - 컨텍스트가 작은 모델(8K): 1~2 권장
+#   - ⚠️ 너무 크면 응답 품질 저하, 너무 작으면 API 호출 증가
+batch_size: 5
+
+# compliance_batch_size: 컴플라이언스 체크 시 한번에 검사할 파일 수
+#   - 기본값: 3
+#   - 컴플라이언스 프롬프트가 컨벤션 JSON을 포함하므로 batch_size보다 작게 권장
+#   - 파일당 코드가 길면 1~2로 줄이세요
+compliance_batch_size: 3
+
+# adoption_threshold: 채택률 임계값 (%)
+#   - CLI: --threshold, -t
+#   - 환경변수: CONVENTION_ADOPTION_THRESHOLD
+#   - 기본값: 90
+#   - 이 값 이상의 채택률을 가진 패턴만 "프로젝트 컨벤션"으로 확정
+#   - 낮추면 더 많은 패턴이 컨벤션으로 인정됨 (70~80: 느슨, 95: 엄격)
+adoption_threshold: 90
+
+# ============================================================
+# LLM 호출 설정
+# ============================================================
+
+# timeout: LLM API 응답 대기 시간 (초)
+#   - CLI: --timeout
+#   - 기본값: 180 (3분)
+#
+#   모델별 권장값:
+#     소형 모델 (7B~14B, Ollama 로컬):   60~120
+#     중형 모델 (32B~72B):                120~180
+#     대형 모델 (235B, MoE):              300~600
+#     클라우드 API (GPT-4o, Claude):      120~180
+#     thinking 모델 (QwQ, o1):            300~600 (추론 시간 김)
+#
+#   ⚠️ 타임아웃 에러가 자주 나면 이 값을 늘리세요
+timeout: 180
+
+# max_tokens: LLM 응답 최대 토큰 수
+#   - CLI: --max-tokens
+#   - 기본값: 4096
+#
+#   모델별 권장값:
+#     일반 모델:                          4096 (기본값 충분)
+#     thinking 모델 (QwQ, Qwen3, o1):     16384~32768 (추론 토큰 포함)
+#     소형 모델 (7B):                     2048~4096
+#
+#   ⚠️ 응답이 잘리면(JSON 불완전) 이 값을 늘리세요
+#   ⚠️ 컴플라이언스 체크는 내부적으로 2048 고정 (짧은 응답이므로)
+max_tokens: 4096
+
+# temperature: LLM 온도 (0.0 ~ 1.0)
+#   - CLI: --temperature
+#   - 기본값: 0.2
+#   - 코드 분석은 일관성이 중요하므로 낮은 값 권장
+#   - 0.0: 결정적(항상 같은 답), 0.2: 약간의 다양성, 0.7+: 창의적
+#   ⚠️ 0.3 이상은 분석 결과 일관성 저하 가능
+temperature: 0.2
+
+# ============================================================
+# 파일 처리 설정
+# ============================================================
+# ⚠️ 기본값 권장 — 특별한 이유 없으면 변경하지 마세요
+
+# max_file_lines: 파일당 최대 읽기 라인 수
+#   - 기본값: 400
+#   - 이 라인 수를 넘는 파일은 앞부분만 읽음
+#   - 늘리면 더 정확하지만 토큰 소모 증가
+max_file_lines: 400
+
+# max_file_size: 파일당 최대 크기 (바이트)
+#   - 기본값: 50000 (50KB)
+#   - 이 크기를 넘는 파일은 분석에서 제외
+max_file_size: 50000
+
+# ============================================================
+# 기타 설정
+# ============================================================
+
+# verbose: 상세 로그 출력
+#   - CLI: --verbose, -v (CLI 옵션이 우선)
+#   - 기본값: false
+#   - true로 설정하면 프롬프트 길이, 파일 체크 상세 등 출력
+verbose: false
+
+# ============================================================
+# 디렉토리 제외 설정
+# ============================================================
+
+# exclude_dirs: 분석에서 제외할 디렉토리 목록
+#   - 컨벤션 추출과 컴플라이언스 체크 모두에서 제외됨
+#   - .convention-ignore 파일과 병합됨 (합집합)
+#   - 아래는 기본 제외 폴더 (필요시 항목 추가/제거)
+exclude_dirs:
+  # 버전 관리
+  - .git
+  # IDE
+  - .idea
+  - .vscode
+  # 빌드 산출물
+  - build
+  - dist
+  - out
+  - target
+  - bin
+  # 패키지 매니저
+  - node_modules
+  - vendor
+  # 가상환경
+  - venv
+  - .venv
+  - env
+  - .env
+  # 캐시
+  - __pycache__
+  - .tox
+  - .mypy_cache
+  - .pytest_cache
+  - egg-info
+  - .eggs
+  # 프레임워크
+  - .gradle
+  - .next
+  - .nuxt
+  # 테스트 커버리지
+  - coverage
+  - .coverage
+  #
+  # 프로젝트별 추가 예시:
+  # - kernel          # 리눅스 커널 소스
+  # - linux-kernel
+  # - drivers
+  # - third_party     # 서드파티 코드
+
+# ============================================================
+# .convention-ignore 파일 (별도 파일)
+# ============================================================
+#
+# 프로젝트 루트에 .convention-ignore 파일을 생성하면
+# 해당 디렉토리/패턴이 분석에서 제외됩니다.
+# (.gitignore와 유사한 형식)
+#
+# 예시 (.convention-ignore 파일 내용):
+#   # 리눅스 커널 소스
+#   kernel/
+#   linux-kernel/
+#   drivers/
+#   # 빌드 산출물
+#   build/
+#   dist/
+#   # 서드파티
+#   third_party/
+#   vendor/
+
+
