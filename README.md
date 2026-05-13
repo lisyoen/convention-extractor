@@ -1,5 +1,7 @@
 # convention-extractor
 
+[![License: CC0-1.0](https://img.shields.io/badge/License-CC0_1.0-lightgrey.svg)](https://creativecommons.org/publicdomain/zero/1.0/)
+
 Automatically extract coding conventions from a source-code directory using any
 OpenAI-compatible LLM API (OpenAI, Ollama, vLLM, LiteLLM, Azure OpenAI, ...).
 
@@ -61,7 +63,7 @@ cp config.example.yaml config.yaml
 Settings precedence: **CLI option > environment variable > `config.yaml` > built-in default**.
 
 | Key | Env var | Default | Notes |
-|-----|---------|---------|-------|
+|---|---|---|---|
 | `api_base` | `CONVENTION_API_BASE` | `http://localhost:11434/v1` | OpenAI-compatible `/v1/chat/completions` endpoint |
 | `api_key` | `CONVENTION_API_KEY` | `no-key` | Ollama accepts any string |
 | `model` | `CONVENTION_MODEL` | `qwen2.5-coder:32b` | Any model your endpoint serves |
@@ -115,6 +117,7 @@ Three sources are merged (union):
 1. **Built-in** — `node_modules`, `.git`, `__pycache__`, `build`, `dist`, `target`, `bin`, ... always on.
 2. **`config.yaml`** — `exclude_dirs:` list.
 3. **`.convention-ignore`** at the project root, `.gitignore`-style:
+
    ```
    # Linux kernel sources bundled in the repo
    kernel/
@@ -132,7 +135,7 @@ Three sources are merged (union):
 ## Output
 
 | File | Description |
-|------|-------------|
+|---|---|
 | `{lang}_convention.md` | Per-language rules, ready to feed an LLM coding assistant as a system prompt |
 | `conventions.json` | Structured analysis with adoption percentages (for MCP / programmatic use) |
 | `refactoring_needed_YYYYMMDD_hhmmss.txt` | Files that violate the extracted conventions, with Korean explanations |
@@ -160,7 +163,7 @@ Each rule only fires on languages where it applies. Binary files and files over
 ## Performance
 
 | Project size | LLM-based check (older) | Static check (this tool) |
-|--------------|-------------------------|--------------------------|
+|---|---|---|
 | 10,000 files | ~3 hours | ~10 minutes |
 | 100,000 files | ~30+ hours | ~1 hour |
 | 500,000 files | impractical | ~2 hours |
@@ -180,4 +183,25 @@ Set the model name in `config.yaml` to whatever your endpoint serves.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+This work is dedicated to the public domain under the
+[Creative Commons CC0 1.0 Universal Public Domain Dedication](https://creativecommons.org/publicdomain/zero/1.0/).
+
+To the extent possible under law, the author has waived all copyright and
+related or neighboring rights to this work. You may copy, modify, distribute,
+and use this work, even for commercial purposes, all without asking
+permission.
+
+See [`LICENSE`](LICENSE) for the full legal text.
+
+### TL;DR
+
+- **You can**: use, copy, modify, distribute, sublicense, and sell this
+  software — for any purpose, commercial or non-commercial — without
+  attribution and without asking.
+- **No warranty**: the work is provided "as-is", without warranties of any
+  kind.
+- **No trademark/patent grant**: CC0 does not waive trademark or patent
+  rights, and the author makes no patent claims either way.
+
+Attribution is not required, but if you find this useful, a mention is
+appreciated.
